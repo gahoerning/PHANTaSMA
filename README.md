@@ -1,2 +1,2 @@
 # PHANTaSMA
-Plataform of High-level Analysis, Numerical Techniques and Sky Map Applications (PHANTaSMA)
+**P**lataform of **H**igh-level **A**nalysis, **N**umerical **T**echniques **a**nd **S**ky **M**ap **A**pplications (PHANTaSMA)
