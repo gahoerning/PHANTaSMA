@@ -8,22 +8,22 @@ Its purpose is to integrate established libraries (e.g. healpy, astropy, numpy, 
 The project does not aim to replace existing libraries. It enforces correct usage patterns, explicit assumptions, and reproducible workflows.
 
 Planned Features
-	•	RMS map smoothing (HEALPix and Cartesian)
-	•	Safe HEALPix resolution changes (ud_grade with variance and pixel window control)
-	•	Map smoothing and interpolation with beam consistency
-	•	Simple SED MCMC (synchrotron, dust, free–free)
-	•	Gaussian fitting via MCMC
-	•	Aperture photometry utilities
-	•	Template fitting (weighted linear regression)
-	•	High-performance modules in C/C++ for heavy simulations
+•	RMS map smoothing (HEALPix and Cartesian)
+•	Safe HEALPix resolution changes (ud_grade with variance and pixel window control)
+•	Map smoothing and interpolation with beam consistency
+•	Simple SED MCMC (synchrotron, dust, free–free)
+•	Gaussian fitting via MCMC
+•	Aperture photometry utilities
+•	Template fitting (weighted linear regression)
+•	High-performance modules in C/C++ for heavy simulations
 
 ⸻
 
 Principles
-	•	Numerical exactness
-	•	Explicit beam and resolution handling
-	•	Reproducibility
-	•	Modular design
+•	Numerical exactness
+•	Explicit beam and resolution handling
+•	Reproducibility
+•	Modular design
 
 ⸻
 
