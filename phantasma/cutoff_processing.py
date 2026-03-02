@@ -180,27 +180,25 @@ def make_target_wcs(center_l, center_b, pixel_size_arcmin, cutout_size_deg):
     Examples
     --------
     >>> target_wcs, shape = make_target_wcs(17.0, 0.8, pixel_size_arcmin=2.0, cutout_size_deg=2.0)
-    >>> data_out, wcs_out = ph.preprocess_and_cutout(..., target_wcs=target_wcs)
+    >>> data_out, wcs_out = ph.preprocess_and_cutout(..., target_wcs=target_wcs, target_shape=shape)
     """
-    pixel_size_deg = pixel_size_arcmin / 60.0
-    n_pix = int(np.ceil(cutout_size_deg / pixel_size_deg))
-    if n_pix % 2 == 1:
-        n_pix += 1  # keep even for symmetry
-
-    w = WCS(naxis=2)
-    w.wcs.crpix = [n_pix / 2.0 + 0.5, n_pix / 2.0 + 0.5]
-    w.wcs.cdelt = [-pixel_size_deg, pixel_size_deg]
-    w.wcs.crval = [center_l, center_b]
-    w.wcs.ctype = ["GLON-TAN", "GLAT-TAN"]
-    return w, (n_pix, n_pix)
+    return _create_intermediate_wcs(center_l, center_b, cutout_size_deg, pixel_size_arcmin)
 
 
-def _sanitise(data):
-    """Replace non-finite values (inf, UNSEEN, etc.) with NaN."""
+def _sanitise(data, remove_healpix_unseen=False):
+    """Replace non-finite values (inf, etc.) with NaN.
+
+    Parameters
+    ----------
+    data : ndarray
+    remove_healpix_unseen : bool
+        If True, also replace the HEALPix UNSEEN sentinel (~-1.6e30) with NaN.
+        Only needed for HEALPix input.
+    """
     out = np.array(data, dtype=np.float64)
     out[~np.isfinite(out)] = np.nan
-    # HEALPix UNSEEN sentinel
-    out[np.isclose(out, hp.UNSEEN, atol=1e-6)] = np.nan
+    if remove_healpix_unseen:
+        out[np.isclose(out, hp.UNSEEN, atol=1e-6)] = np.nan
     return out
 
 
@@ -215,6 +213,7 @@ def preprocess_and_cutout(
     target_res_arcmin=10.0,
     pixel_size_arcmin=1.0,
     target_wcs=None,
+    target_shape=None,
     healpix_coord="G",
 ):
     """
@@ -286,13 +285,23 @@ def preprocess_and_cutout(
     """
     if target_wcs is None:
         raise ValueError("target_wcs must be provided.")
+    if original_res_arcmin <= 0:
+        raise ValueError("original_res_arcmin must be positive.")
+    if target_res_arcmin <= 0:
+        raise ValueError("target_res_arcmin must be positive.")
+    if pixel_size_arcmin <= 0:
+        raise ValueError("pixel_size_arcmin must be positive.")
+    if cutout_size_deg <= 0:
+        raise ValueError("cutout_size_deg must be positive.")
 
-    # Output grid shape derived from output pixel scale and cutout size
-    pixel_size_deg = pixel_size_arcmin / 60.0
-    n_pix = int(np.ceil(cutout_size_deg / pixel_size_deg))
-    if n_pix % 2 == 1:
-        n_pix += 1  # keep even for symmetry
-    target_shape = (n_pix, n_pix)
+    # Output grid shape derived from output pixel scale and cutout size.
+    # Can be overridden by passing target_shape explicitly (e.g. from make_target_wcs).
+    if target_shape is None:
+        pixel_size_deg = pixel_size_arcmin / 60.0
+        n_pix = int(np.ceil(cutout_size_deg / pixel_size_deg))
+        if n_pix % 2 == 1:
+            n_pix += 1
+        target_shape = (n_pix, n_pix)
 
     # ------------------------------------------------------------------
     # 1.  Read / prepare the input map on a flat-sky intermediate grid
@@ -324,7 +333,7 @@ def preprocess_and_cutout(
     # ------------------------------------------------------------------
     # 2.  Sanitise – replace sentinels / inf with NaN
     # ------------------------------------------------------------------
-    data_proc = _sanitise(data_proc)
+    data_proc = _sanitise(data_proc, remove_healpix_unseen=(map_format == "healpix"))
 
     # ------------------------------------------------------------------
     # 3.  Smooth to the target resolution
@@ -465,13 +474,15 @@ def _read_fits(data, wcs, center_l, center_b, padded_size_deg):
     position = (float(pix_x), float(pix_y))
 
     try:
+        from astropy.nddata.utils import PartialOverlapError
         cutout = Cutout2D(
             raw_data, position=position, size=size_pix,
             wcs=raw_wcs, mode="partial", fill_value=np.nan,
         )
         data_out = cutout.data
         wcs_out = cutout.wcs
-    except Exception:
+    except PartialOverlapError:
+        # Centre is outside the map — return NaN array with original WCS
         warnings.warn(
             "Cutout region falls outside the input FITS map; "
             "returning NaN-filled array.",
