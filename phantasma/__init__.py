@@ -10,6 +10,6 @@ Usage
     from phantasma.cutoff_processing import preprocess_and_cutout
 """
 
-from .cutoff_processing import preprocess_and_cutout, make_target_wcs
+from .cutoff_processing import smooth_cutout, make_target_wcs
 
-__all__ = ["preprocess_and_cutout", "make_target_wcs"]
+__all__ = ["smooth_cutout", "make_target_wcs"]

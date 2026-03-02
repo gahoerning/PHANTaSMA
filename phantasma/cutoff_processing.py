@@ -180,7 +180,7 @@ def make_target_wcs(center_l, center_b, pixel_size_arcmin, cutout_size_deg):
     Examples
     --------
     >>> target_wcs, shape = make_target_wcs(17.0, 0.8, pixel_size_arcmin=2.0, cutout_size_deg=2.0)
-    >>> data_out, wcs_out = ph.preprocess_and_cutout(..., target_wcs=target_wcs, target_shape=shape)
+    >>> data_out, wcs_out = ph.smooth_cutout(..., target_wcs=target_wcs, target_shape=shape)
     """
     return _create_intermediate_wcs(center_l, center_b, cutout_size_deg, pixel_size_arcmin)
 
@@ -202,7 +202,7 @@ def _sanitise(data, remove_healpix_unseen=False):
     return out
 
 
-def preprocess_and_cutout(
+def smooth_cutout(
     data,
     map_format="fits",
     original_wcs=None,
